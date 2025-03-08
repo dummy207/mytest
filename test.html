@@ -1,0 +1,266 @@
+<html>
+  <head>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <style>
+      table,
+      th,
+      td {
+        border: 1px solid black;
+        border-collapse: collapse;
+      }
+    </style>
+  </head>
+  <body>
+    <div>
+      <canvas id="sip_chart_bar" style="width: 100%; max-width: 700px"></canvas
+      ><br />
+      <canvas id="sip_chart_pie" style="width: 100%; max-width: 700px"></canvas
+      ><br />
+      <table id="sip_table">
+        <thead>
+          <tr>
+            <th>Years</th>
+            <th>Total Amount Invested</th>
+            <th>Total Estimated Return on Investment</th>
+            <th>Total Maturity Amount</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <label>Initial Monthly investment of SIP: </label>
+      <input
+        id="sip_p"
+        value="5000"
+        type="number"
+        min="0"
+        step="500"
+        onchange="generate_sip()"
+      />
+      <br />
+      <label>Expected Annual Rate of Return: </label>
+      <input
+        id="sip_r"
+        value="12"
+        type="number"
+        min="0"
+        step="1"
+        onchange="generate_sip()"
+      />
+      <br />
+      <label>Number of years: </label>
+      <input
+        id="sip_n"
+        value="20"
+        type="number"
+        min="0"
+        step="5"
+        onchange="generate_sip()"
+      />
+    </div>
+    <script>
+      // Getting Today's Year
+      const today = new Date();
+      const today_year = today.getFullYear();
+
+      // Chart DATA
+      const data_sip = {
+        step: 5,
+        min: 0,
+        max: 20,
+        labels: [],
+        datasets: [
+          {
+            label: "Total Amount Invested",
+            data: [],
+            borderColor: "Aquamarine",
+            fill: false,
+            backgroundColor: "Aquamarine",
+          },
+          {
+            label: "Total Estimated Return on Investment",
+            data: [],
+            borderColor: "Gainsboro",
+            fill: false,
+            backgroundColor: "Gainsboro",
+          },
+          {
+            label: "Total Maturity Amount",
+            data: [],
+            borderColor: "GoldenRod",
+            fill: false,
+            backgroundColor: "GoldenRod",
+          },
+        ],
+      };
+
+      // Creating Bar Graph
+      const sip_chart_bar = new Chart("sip_chart_bar", {
+        type: "bar",
+        data: data_sip,
+        plugins: [ChartDataLabels], // For setting Numbers in Stacked graphs
+        options: {
+          interaction: {
+            mode: "index",
+          },
+          plugins: {
+            title: {
+              display: true,
+              text: "SIP",
+              fontSize: 24,
+            },
+            legend: {
+              display: true,
+            },
+          },
+          scales: {
+            x: {
+              stacked: true,
+              title: {
+                display: true,
+                text: "Years",
+              },
+            },
+            y: {
+              stacked: true,
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: "Amount (₹)",
+              },
+            },
+          },
+        },
+      });
+
+      // Creating Pie Graph
+      const sip_chart_pie = new Chart("sip_chart_pie", {
+        type: "pie",
+        data: {
+          labels: [
+            "Total Amount Invested",
+            "Total Estimated Return on Investment",
+            "Total Maturity Amount",
+          ],
+          datasets: [
+            {
+              backgroundColor: ["Aquamarine", "Gainsboro", "GoldenRod"],
+              data: [],
+            },
+          ],
+        },
+        plugins: [ChartDataLabels], // For setting Numbers in Stacked graphs
+        options: {
+          plugins: {
+            title: {
+              display: true,
+              text: "SIP totals",
+              fontSize: 24,
+            },
+            legend: {
+              display: true,
+            },
+          },
+        },
+      });
+
+      // Function to Generate SIP data
+      function generate_sip() {
+        let _sip_p = document.getElementById("sip_p").valueAsNumber;
+        let _sip_r = document.getElementById("sip_r").valueAsNumber;
+        let _sip_n = document.getElementById("sip_n").valueAsNumber;
+        // Setting MAX
+        data_sip.max = Math.ceil(
+          document.getElementById("sip_n").valueAsNumber / data_sip.step
+        );
+        // Setting x-axis
+        data_sip.labels = [];
+        for (
+          let x = today_year + data_sip.step + data_sip.min;
+          x <= today_year + data_sip.step * data_sip.max;
+          x += data_sip.step
+        ) {
+          data_sip.labels.push(x);
+        }
+        // Total Amount Invested
+        data_sip.datasets[0].data = [];
+        for (
+          let x = data_sip.step;
+          x <= data_sip.max * data_sip.step;
+          x += data_sip.step
+        ) {
+          let y = 12 * x * _sip_p;
+          data_sip.datasets[0].data.push(y);
+        }
+        // Total Maturity Amount
+        data_sip.datasets[2].data = [];
+        for (
+          let x = data_sip.step;
+          x <= data_sip.max * data_sip.step;
+          x += data_sip.step
+        ) {
+          let y = parseInt(
+            _sip_p *
+              (((1 + _sip_r / 1200) ** (12 * x) - 1) / (_sip_r / 1200)) *
+              (1 + _sip_r / 1200)
+          );
+          data_sip.datasets[2].data.push(y);
+        }
+        // Total Estimated Return on Investment
+        data_sip.datasets[1].data = [];
+        for (let x = 0; x < data_sip.labels.length; x += 1) {
+          let y = data_sip.datasets[2].data[x] - data_sip.datasets[0].data[x];
+          data_sip.datasets[1].data.push(y);
+        }
+        // Update Bar Chart
+        sip_chart_bar.update();
+
+        // Update Pie Chart
+        sip_chart_pie.data.datasets[0].data = [
+          data_sip.datasets[0].data.at(-1),
+          data_sip.datasets[1].data.at(-1),
+          data_sip.datasets[2].data.at(-1),
+        ];
+        sip_chart_pie.update();
+
+        // Update Table
+        let sip_body = document
+          .getElementById("sip_table")
+          .querySelector("tbody");
+        // Empty all rows in tbody
+        while (sip_body.firstChild) {
+          sip_body.removeChild(sip_body.firstChild);
+        }
+        // Add data to the tbody
+        for (let i = 0; i < data_sip.labels.length; i++) {
+          const newRow = document.createElement("tr");
+
+          // Add Year
+          let cell = document.createElement("td");
+          cell.textContent = data_sip.labels[i];
+          newRow.appendChild(cell);
+
+          // Add Total Amount Investement
+          cell = document.createElement("td");
+          cell.textContent = data_sip.datasets[0].data[i];
+          newRow.appendChild(cell);
+
+          // Add Total Estimated Return on Investment
+          cell = document.createElement("td");
+          cell.textContent = data_sip.datasets[1].data[i];
+          newRow.appendChild(cell);
+
+          // Add Total Maturity Amount
+          cell = document.createElement("td");
+          cell.textContent = data_sip.datasets[2].data[i];
+          newRow.appendChild(cell);
+
+          // Append the row to the tbody
+          sip_body.appendChild(newRow);
+        }
+      }
+
+      generate_sip();
+    </script>
+  </body>
+</html>
